@@ -2,13 +2,13 @@
   "id": 1,
   "title": "Repo, deploy pipeline, and Next.js scaffold",
   "phase": "dev_build",
-  "qa1_audit_result": null,
+  "qa1_audit_result": "CONDITIONAL",
   "qa1_audit_file_hash": null,
   "qa1_audited_tree_hash": null,
   "last_shipped_commit": null,
   "groundtruth_result": null,
   "live_loop_audit_trees": [],
-  "audit_rounds": 0,
+  "audit_rounds": 1,
   "live_test_rounds": 0,
   "started": "2026-09-19T18:59:09+00:00",
   "completed": null,
@@ -18,11 +18,17 @@
       "actor": "system",
       "event": "sprint_started",
       "detail": ""
+    },
+    {
+      "ts": "2026-09-19T19:35:04+00:00",
+      "actor": "qa1",
+      "event": "audit",
+      "detail": "CONDITIONAL: CONDITIONAL. Audited commit 04848fa, working tree clean, sprint file re-read fresh immediately before this verdict. All 8 requirements are met and were verified from real output, not from the handoff assertions. One demonstrated defect blocks.\n\nREQUIREMENTS COVERAGE - all MET:\nReq 1: .gitignore has node_modules/, .next/, .env* plus negation for .env.example, and all three original Fully Completely lines are preserved. git log --all --diff-filter=A across full history shows no node_modules or .next path was ever committed, not merely untracked after the fact.\nReq 2: swept the full tracked tree. Only connection-string hits are the two placeholder lines in .env.example (user:password@host:5432/dbname). No tokens, keys or secret-shaped values anywhere tracked. git check-ignore confirms .env.local is ignored while .env.example is NOT ignored, so the negation ordering is correct. .env.local exists on disk and is untracked. .env.example names both variables lib/db.ts actually reads.\nReq 3: App Router confirmed (app/ present, no pages/). TypeScript with strict true. npm run lint exit 0. npm run build exit 0. Both run by me, not taken on trust. eslint.config.mjs excludes scripts/, templates/ and .claude/ only - framework tooling that predates the app. App code in app/ and lib/ is still linted, so this is scoping, not suppression.\nReq 4: lib/db.ts reads process.env.DATABASE_URL ?? process.env.POSTGRES_URL. Nothing hardcoded. Handoff states what was actually provisioned (Neon via Vercel marketplace, resource neon-alizarin-paddle) rather than restating the flagged assumption as fact, which is what this criterion asked for. Choosing pg over a vendor SDK matches the implementation-agnostic framing.\nReq 5: real SELECT 1 AS ok round-trip. The 200 is unreachable except after the awaited query resolves AND the row value is checked; there is no early-return path to success. Timestamp is new Date().toISOString() inside the handler, not module scope.\nReq 6: export const dynamic = force-dynamic is present with an accurate comment. Independently corroborated by build output, which lists /api/health as dynamic (server-rendered on demand), not static. Whether it holds live is LiveQA.\nReq 7: traced the catch path. Response body is exactly status, timestamp, message: Service unavailable. The caught error object goes only to console.error. No connection string, host, credential or driver object reaches the body. Error is logged, never swallowed.\nReq 8: no deploy config committed that could contradict auto-deploy from main; .vercel is ignored and no vercel.json exists. Nothing in the repo conflicts. Actual deploy behaviour is LiveQA.\n\nBLOCKING ISSUE - high severity - lib/db.ts line 28\nnew Pool({ connectionString }) is constructed with zero error listeners. pg attaches its own idleListener to every client after connect (pg-pool/index.js line 62 and line 380), and that listener calls pool.emit(error, err, client). Pool extends EventEmitter, so an error emitted with no listener is an uncaught exception and the process dies.\nWhy this matters here: it fires on an IDLE client, between requests, so the try/catch in app/api/health/route.ts cannot catch it - no request is in flight. Instead of the designed 503 with a status field, the function instance dies and the platform returns a generic 500 with no JSON body at all. That directly undercuts the failure contract Req 5 and Req 7 specify.\nDemonstrated, not argued. Repro used the projects own pg-pool install and pg-pools real idleListener path, with a stub Client injected via options.Client purely to control when the socket error fires: request 1 returns 200 normally, the now-idle client then emits ECONNRESET, and the process exits with an uncaught exception that never reaches the route try/catch. Falsification test: the identical script with a single pool.on(error) listener added logs the error and survives, exit 0. Zero listeners crashes, one listener does not. That isolates the cause to the missing handler.\nNot exotic, given what was actually provisioned: Neon autosuspends idle compute by default and terminates its connections, and a warm Vercel instance holds pooled idle clients across invocations. pg-pool documents this exact event and instructs handling it the same way you would treat process.on(uncaughtException). The library requires this handler; the code omits it. Note honestly: the crash mechanism is confirmed, the production trigger frequency is high-likelihood but I did not prove it inside Vercel runtime, and this is not something LiveQA can reliably trigger either. That is a reason to fix it now, not a reason to defer it.\n\nREQUIRED FIX - roughly three lines in lib/db.ts, attach an error handler to the pool at construction, log the error and let the pool discard the dead client. Do not swallow it silently and do not call process.exit in a serverless handler.\n\nWHY THIS BLOCKS RATHER THAN SHIPS WITH A NOTE: lib/db.ts is the foundation sprints 2 and 3 both import, so this gets harder to change once it is load-bearing. More to the point, a health endpoint that crashes the server when the database goes away is worse than no health endpoint - it is actively misleading, and being a truthful database signal is the entire reason this sprint exists. The sprint file itself names looks finished while being broken as the risk it is built to prevent.\n\nCODE QUALITY - otherwise good. Clean separation between the pool wrapper and the route. Comments explain why rather than what, and the module-scope pool versus per-request timestamp distinction is reasoned through correctly rather than stumbled into. No SQL injection surface (no user input, and query is parameterized by design). No shared types redefined locally. No tests, correctly - the sprint explicitly puts a test suite out of scope and there is no app logic yet to cover. Build artifacts and the stray Neon agent-skill files were correctly kept out of the commit. Non-blocking, for sprint 2 not now: app/layout.tsx still carries the default Create Next App metadata title."
     }
   ],
   "last_claim": {
-    "claude_session_id": "ff4e5e68-1289-506d-a7d9-0727932a2b93",
-    "claude_agent": "dev-team-1",
-    "ts": "2026-09-19T18:59:09+00:00"
+    "claude_session_id": "f56fc72f-1e6d-599d-b32f-6f9c31931588",
+    "claude_agent": "qa1",
+    "ts": "2026-09-19T19:35:04+00:00"
   }
 }
