@@ -2,7 +2,7 @@
 id: 2
 title: "Post an item and see the board"
 epic: "Swap Board v1"
-status: todo
+status: in_progress
 created: 2026-09-19T20:45:25+00:00
 ---
 

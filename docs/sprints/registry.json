@@ -10,8 +10,8 @@
     "2": {
       "title": "Post an item and see the board",
       "epic": "Swap Board v1",
-      "status": "todo",
-      "file": "docs/sprints/1-todo/sprint-2_post-an-item-and-see-the-board.md"
+      "status": "in_progress",
+      "file": "docs/sprints/2-in-progress/sprint-2_post-an-item-and-see-the-board.md"
     }
   }
 }
