@@ -1,11 +1,11 @@
 {
   "id": 2,
   "title": "Post an item and see the board",
-  "phase": "dev_agreed_done",
+  "phase": "liveqa_live",
   "qa1_audit_result": "PASS",
   "qa1_audit_file_hash": "847cdd925d1aba009765c4869231807dc1f35b4c586ac7bba9f203f5b7460385",
   "qa1_audited_tree_hash": "93578bf94c7412d3abc585f7166922bb4eaaada2db4935c7a9efa27502146784",
-  "last_shipped_commit": null,
+  "last_shipped_commit": "d06253ad4e8a387084c04046b85c2bf9b7d24aa2",
   "groundtruth_result": null,
   "live_loop_audit_trees": [],
   "audit_rounds": 1,
@@ -30,11 +30,17 @@
       "actor": "dev-team",
       "event": "dev_agreed_done",
       "detail": ""
+    },
+    {
+      "ts": "2026-09-19T21:27:36+00:00",
+      "actor": "pipeman",
+      "event": "shipped",
+      "detail": "commit=d06253a | ci=undeterminable: could not run gh to query CI runs for d06253ad4e8a387084c04046b85c2bf9b7d24aa2 ([Errno 2] No such file or directory: 'gh') \u2014 gh may not be installed, or the query timed out."
     }
   ],
   "last_claim": {
-    "claude_session_id": "ff4e5e68-1289-506d-a7d9-0727932a2b93",
-    "claude_agent": "dev-team-1",
-    "ts": "2026-09-19T21:26:31+00:00"
+    "claude_session_id": "87b19d43-dd8e-5488-8289-96055f2dedb3",
+    "claude_agent": "pipeman",
+    "ts": "2026-09-19T21:27:36+00:00"
   }
 }
