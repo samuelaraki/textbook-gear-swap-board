@@ -2,3 +2,12 @@
 docs/sprints/.locks/
 *.fc-bak-*
 .claude/role-claims.json
+
+# Application
+node_modules/
+.next/
+.env*
+!.env.example
+.vercel
+*.tsbuildinfo
+next-env.d.ts
