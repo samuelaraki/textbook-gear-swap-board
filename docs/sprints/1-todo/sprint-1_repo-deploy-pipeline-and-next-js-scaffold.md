@@ -19,7 +19,7 @@ So this sprint builds no product feature at all. It builds the thing that makes 
 
 ### Requirements
 
-1. **Git repository initialized locally, on branch `main`.** `.gitignore` must cover `node_modules/`, `.next/`, and `.env*` (excluding `.env.example`), and must preserve the three Fully Completely lines already present in the existing `.gitignore` (`docs/sprints/.locks/`, `*.fc-bak-*`, `.claude/role-claims.json`). The existing `docs/` tree, including this sprint file and `docs/sprints/registry.json`, is committed as part of the initial commit — it exists on disk already but has never been under version control.
+1. **`.gitignore` extended to cover the application.** *Already done, do not redo:* the repository, branch `main`, the `origin` remote (`https://github.com/samuelaraki/textbook-gear-swap-board.git`), and the initial scaffold commit all exist as of `cd034da`, which is already on the remote; `docs/sprints/` entered version control in `d364c43`. What remains in this requirement is only that `.gitignore` gains entries for `node_modules/`, `.next/`, and `.env*` (with `.env.example` still tracked), while preserving the three Fully Completely lines already present (`docs/sprints/.locks/`, `*.fc-bak-*`, `.claude/role-claims.json`). Do not run `git init` and do not re-add `origin`.
 
 2. **No credential, connection string, or API token is ever committed.** Real values live in Vercel's environment-variable settings and in a local `.env.local` that `.gitignore` excludes. A committed `.env.example` documents every variable the app reads, by name, with placeholder values only.
 
@@ -39,7 +39,7 @@ So this sprint builds no product feature at all. It builds the thing that makes 
 
 **QA1 (static audit — reads the diff, never a browser):**
 
-- Req 1: `.gitignore` contains entries for `node_modules/`, `.next/`, and `.env*`, and still contains all three original Fully Completely lines. Confirm `git log` shows the repo's initial commit includes `docs/sprints/` and this sprint file.
+- Req 1: `.gitignore` contains entries for `node_modules/`, `.next/`, and `.env*`, and still contains all three original Fully Completely lines. Confirm `git ls-files` shows no `node_modules/` or `.next/` path was ever committed — an ignore rule added after the fact does not untrack what a scaffold already staged.
 - Req 2: Search the full committed tree for connection strings, tokens, and secret-shaped values — confirm none are present, including in `.env.example`, `next.config.*`, and any committed config. Confirm `.env.example` exists, names every variable the code actually reads, and carries placeholders only. Confirm `.gitignore`'s `.env*` rule does not itself exclude `.env.example` from the commit.
 - Req 3: Confirm App Router (`app/` directory, not `pages/`) and TypeScript are in use. Confirm a production build and lint both complete with no errors, from the build output, not from an assertion that they were run.
 - Req 4: Confirm the database client is configured from environment variables and nothing is hardcoded. Confirm Dev Team's handoff states what was actually provisioned rather than restating the flagged assumption in requirement 4 back as fact.
@@ -69,9 +69,9 @@ So this sprint builds no product feature at all. It builds the thing that makes 
 - **Blocks:** Sprint 2 (post an item / see the board) and Sprint 3 (claim flow). Both are blocked completely — neither can clear a gate without a repo and a live URL.
 - **Blocked by:** Nothing. This is the first sprint in the epic.
 - **External:**
-  - A GitHub (or equivalent) remote repository must exist for `origin` to point at. **Creating the remote and performing the first push is Pipeman's**, not Dev Team's — Dev Team runs `git init`, commits locally, and stops. The user may need to provide the repository URL or the account access.
+  - **Resolved:** the GitHub remote exists, is reachable, and already carries the initial scaffold commit — the user created and pushed it during planning. **All further pushes are Pipeman's**, without exception. Dev Team commits locally and stops.
   - A Vercel account with permission to create a project and provision storage for it. If the account cannot provision Postgres, requirement 4 is blocked and the sprint should be returned via `/sprint-block` rather than worked around with a laptop-only database.
-  - **Note on this file's own commit:** the framework's rule that a role commits the bookkeeping its lifecycle command produced cannot be followed at creation time for this sprint, because no repository existed when it was written. This is not a skipped step — requirement 1 folds `docs/sprints/` into the initial commit, which is where this file first enters version control.
+  - **Note on local/remote divergence at handoff:** this sprint file and `docs/sprints/registry.json` were committed locally as `d364c43`, which is one commit ahead of `origin/main`. That is expected and correct — Master Controller does not push. Pipeman carries it with sprint 1's first ship.
 
 ### Team Assignments
 
@@ -83,5 +83,5 @@ So this sprint builds no product feature at all. It builds the thing that makes 
 - **Vercel's Postgres offering may not match what requirement 4 assumes.** — Requirement 4 is written implementation-agnostic and explicitly flagged as an assumption to verify first. Dev Team confirms what the account actually offers before writing a line against it, and reports what was provisioned. Any reachable Postgres satisfies the requirement.
 - **The health endpoint gets statically rendered and reports a permanent, meaningless `200`.** — This is the most likely way this sprint ships broken while looking green, which is why it gets its own requirement (6), its own static criterion, and its own live criterion. The two-timestamp check is the one that actually catches it.
 - **A database that works locally and fails in Vercel's runtime.** — The health check is deliberately tested on the deployed URL, not locally. A local pass is not evidence for this sprint's gate.
-- **Secrets committed during initial setup.** — Scaffolding tools sometimes write env files into the working tree, and the initial commit here is unusually large because it captures a previously untracked `docs/` tree. Requirement 2 gets an explicit QA1 sweep of the full committed tree rather than just the diff.
+- **Secrets or build artifacts committed during scaffolding.** — Scaffolding tools write env files into the working tree, and `.gitignore` currently has no `node_modules/` or `.next/` rule at all, so a scaffold run before requirement 1 is applied would stage both. Requirement 1's criterion checks the tracked file list, not just the ignore file, and requirement 2 gets an explicit QA1 sweep of the full committed tree rather than only the diff.
 - **This epic has no parallelizable work.** — Sprints 1, 2 and 3 form a strict chain: sprint 1 creates the repo everything else needs, and sprints 2 and 3 both edit the same schema, the same API surface, and the same page. Assigning Dev Team 2 here would mean splitting one sprint's work in half, which is what Dev Team 2 is explicitly not for. Sequential is the correct call, not a capacity failure.
