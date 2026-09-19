@@ -26,6 +26,20 @@ function getPool(): Pool {
   }
   if (!pool) {
     pool = new Pool({ connectionString });
+    // Required, not optional: pg attaches its own listener to every idle
+    // client that re-emits the client's errors as a pool 'error' event
+    // (e.g. Neon autosuspending and dropping a connection a warm serverless
+    // instance was holding idle between requests, with no request/response
+    // in flight to catch it). Pool extends EventEmitter — an 'error' event
+    // with zero listeners throws and crashes the process, bypassing every
+    // try/catch in route.ts entirely (QA1, sprint 1 round 1). Logging here
+    // and letting pg discard the dead client keeps that failure contained
+    // to a log line instead of taking the whole instance down; it must
+    // never call process.exit or rethrow from a listener in a serverless
+    // handler.
+    pool.on("error", (err) => {
+      console.error("[lib/db] idle client error:", err);
+    });
   }
   return pool;
 }
