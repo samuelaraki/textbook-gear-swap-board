@@ -1,7 +1,7 @@
 {
   "id": 1,
   "title": "Repo, deploy pipeline, and Next.js scaffold",
-  "phase": "qa1_audit",
+  "phase": "dev_agreed_done",
   "qa1_audit_result": "PASS",
   "qa1_audit_file_hash": "c633384d824327556aeefcce0958f4174c1d23ecca98a5cdb019d348b4cb093d",
   "qa1_audited_tree_hash": "936ed4697bffaeb608645d66504db19653f5f453f340d5ffa7e6c0f6625b6f62",
@@ -30,11 +30,17 @@
       "actor": "qa1",
       "event": "audit",
       "detail": "PASS: PASS (round 2). Audited commit 1fdeb4c, working tree clean. Sprint file re-read and confirmed unchanged since round 1 - last touched at ca742f6, zero diff across 04848fa..HEAD - so round 1 requirement coverage stands unchanged and this re-audit focused on the fix, as intended for a small isolated change.\n\nSCOPE OF THE FIX: git diff --stat 04848fa..HEAD shows exactly two files - lib/db.ts (+14) and docs/sprints/state/sprint-1.json (my own round 1 bookkeeping). No scope creep, nothing else touched, route.ts untouched.\n\nTHE ROUND 1 BLOCKER IS RESOLVED AND VERIFIED, not accepted on the diff. lib/db.ts now attaches pool.on(error) immediately after construction, inside the same if (!pool) guard, so it is attached exactly once and there is no async gap between construction and attachment during which an event could be missed. Handler logs via console.error and returns. No process.exit, no rethrow from the listener - both correct for a serverless handler, and both were explicit in the round 1 required fix.\n\nVERIFICATION - A/B against the real module, not a synthetic emit. I compiled the actual lib/db.ts to CommonJS and drove it through pg-pools real idle-client path (real pg, real pg-pool, real makeIdleListener; only the leaf Client was stubbed, to control when the socket error fires, injected by subclassing the Pool the module itself constructs). Same harness, same input, only the module under test differs:\nCONTROL, round 1 code at 04848fa: listeners 0, idle client takes an ECONNRESET, uncaught exception, instance dies.\nFIXED, current code at 1fdeb4c: listeners 1, same ECONNRESET, error logged as [lib/db] idle client error, instance survives, exit 0.\nThat is a controlled A/B, not a before-only demonstration: the harness provably still catches the defect, so the pass is evidence the fix works rather than evidence the test went blind.\n\nNO REGRESSION: npm run lint exit 0 and npm run build exit 0, both re-run by me. Build output still lists /api/health as dynamic (server-rendered on demand), not static, so Req 6 still holds after the change. Working tree clean.\n\nREQUIREMENTS 1-8: all remain MET exactly as recorded in round 1 notes - the requirements file did not change and the only code delta is additive error handling in the pool constructor. Nothing in round 1 coverage needs restating or revisiting.\n\nON THE ACKNOWLEDGED LIMITATION: Dev Team correctly flagged again that the realistic trigger - Neon autosuspending a warm Vercel instances pooled idle connection - remains unobserved in the real runtime, rather than letting a clean re-audit imply it had been. That is the right call and it is exactly how I characterised it in round 1. It does not hold up this gate. The crash mechanism was confirmed, the fix is the documented pg remedy for that specific event, and the A/B above proves the remedy is actually wired into this module. LiveQA cannot reliably trigger this either, so it should not be treated as an open live-test item; it is closed on mechanism, which is the appropriate standard for a static gate.\n\nCODE QUALITY: the fix is minimal and correctly placed. The comment explains why the listener is mandatory rather than restating what the line does, which is the right instinct. Still no automated tests, still correct - the sprint puts a test suite explicitly out of scope and sprint 2 introduces the first logic worth covering. Non-blocking, for sprint 2: app/layout.tsx still carries the default Create Next App metadata title.\n\nCLEARED FOR /sprint-dev-done then Pipeman. LiveQA still owns the live criteria this audit cannot settle: the two-timestamp check, the deployed 200 proving Vercel runtime can actually reach Neon, and the Req 7 preview-deployment failure-path attempt."
+    },
+    {
+      "ts": "2026-09-19T19:43:08+00:00",
+      "actor": "dev-team",
+      "event": "dev_agreed_done",
+      "detail": ""
     }
   ],
   "last_claim": {
-    "claude_session_id": "f56fc72f-1e6d-599d-b32f-6f9c31931588",
-    "claude_agent": "qa1",
-    "ts": "2026-09-19T19:41:06+00:00"
+    "claude_session_id": "ff4e5e68-1289-506d-a7d9-0727932a2b93",
+    "claude_agent": "dev-team-1",
+    "ts": "2026-09-19T19:43:08+00:00"
   }
 }
