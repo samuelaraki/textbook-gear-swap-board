@@ -2,10 +2,6 @@
 docs/sprints/.locks/
 *.fc-bak-*
 .claude/role-claims.json
-.claude/settings.local.json
-
-# macOS
-.DS_Store
 
 # Application
 node_modules/
