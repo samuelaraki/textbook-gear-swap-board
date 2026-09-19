@@ -1,7 +1,7 @@
 {
   "id": 1,
   "title": "Repo, deploy pipeline, and Next.js scaffold",
-  "phase": "complete_ready",
+  "phase": "complete",
   "qa1_audit_result": "PASS",
   "qa1_audit_file_hash": "c633384d824327556aeefcce0958f4174c1d23ecca98a5cdb019d348b4cb093d",
   "qa1_audited_tree_hash": "936ed4697bffaeb608645d66504db19653f5f453f340d5ffa7e6c0f6625b6f62",
@@ -11,7 +11,7 @@
   "audit_rounds": 2,
   "live_test_rounds": 3,
   "started": "2026-09-19T18:59:09+00:00",
-  "completed": null,
+  "completed": "2026-09-19T20:51:23+00:00",
   "history": [
     {
       "ts": "2026-09-19T18:59:09+00:00",
@@ -66,11 +66,17 @@
       "actor": "liveqa",
       "event": "live_test",
       "detail": "PASS: PASS - live test round 3. All four LiveQA criteria verified live against commit 6d5a803. Round 2's single outstanding item (Req 7) is now closed with direct evidence I gathered myself.\n\nEnv: curl against Vercel, 2026-09-19 20:35-20:44 UTC.\n  Reqs 3/4/5/6/8 tested on production deployment ppjelhq81, built from \"Cloning ... Branch: main, Commit: 6d5a803\" - the exact reshipped commit.\n  Req 7 tested on preview deployment 292jy7q6n (target confirmed \"preview\", not production), same application code, DATABASE_URL pointed at an unreachable host.\n\nReqs 4/5/8 - /api/health returns 200 with well-formed JSON: PASS.\n  Verbatim: {\"status\":\"ok\",\"timestamp\":\"2026-09-19T20:35:33.214Z\"} - HTTP 200, application/json.\n  Proves the deployed app reaches Postgres (Neon) from Vercel's runtime. That was this sprint's whole purpose.\n\nReq 6 - two requests several seconds apart return different timestamps: PASS, tested far past the minimum.\n  20:35:33.214Z / 20:35:39.473Z (6.3s apart) / 20:36:49.707Z (76s after the first).\n  Then 16 further requests: every timestamp unique, count=1 across all, zero repeats.\n  x-vercel-cache: MISS and age: 0 on every response inspected.\n  The sprint file named static rendering as its most likely way to ship broken while looking green. It is not present.\n\nReq 3/8 - site root renders without a runtime or build error page: PASS.\n  HTTP 200, 10657 bytes. Rendered text: \"Create Next App To get started, edit the page.tsx file...\" - the starter page the sprint explicitly permits.\n  Swept for application error / unhandled / Internal Server Error / stack / exception / ECONNREFUSED: zero matches. Linked CSS chunk loads 200.\n  Auto-deploy from main confirmed: every push produced a Ready deployment.\n\nReq 7 - failure path returns 5xx and leaks nothing: PASS. Verified independently, not taken on report.\n  A preview deployment with an unreachable DATABASE_URL was provided to me. I did not accept the pasted result - I re-ran it myself.\n  My own observation, verbatim: HTTP 503, content-type application/json, x-matched-path /api/health\n    {\"status\":\"error\",\"timestamp\":\"2026-09-19T20:43:33.821Z\",\"message\":\"Service unavailable\"}\n  My timestamp (20:43:33.821Z) differs from the one in the handoff report (20:42:44.521Z), confirming a fresh per-request execution rather than a cached or replayed artifact. x-vercel-cache: MISS.\n  LEAK SWEEP over the full body AND all response headers, case-insensitive, 21 patterns: postgres, neon, password, notarealpassword, 127.0.0.1, liveqa, ECONNREFUSED, ENOTFOUND, ETIMEDOUT, :5432, nonexistent, DATABASE_URL, POSTGRES_URL, stack-frame pattern \"at fn (\", /var/task, /vercel/, node_modules, stack, \"Error:\", aws-, amazonaws. ZERO hits on every one.\n  Body confirmed byte-for-byte with od -c: exactly {\"status\":\"error\",\"timestamp\":\"...\",\"message\":\"Service unavailable\"} and nothing else - 89 bytes, no trailing content.\n  CONSISTENCY, 5 consecutive runs: 503 every time, \"status\":\"error\" every time, unique timestamps each. The error path never once flipped to 200 or \"ok\".\n  Probed for a verbose/debug escape hatch: /api/health?debug=1&verbose=true returned the identical clean error body. HEAD -> 503 (consistent), POST -> 405.\n  On the flag-parsing question raised in the handoff (whether both -e overrides parsed as intended): moot for this verdict and I am not relying on the reasoning offered. The observed 503 is itself proof the handler could not reach a database, whichever variable carried the bad value. The behavior under a failed query is what Req 7 asks about, and that is what I measured.\n\nTHIS ALSO CLOSES THE DOUBT I RAISED IN ROUND 2. I flagged that every prior observation was a success-path observation, and that a handler which swallowed its query error and always returned {\"status\":\"ok\"} would look identical. It does not do that. Under a genuinely unreachable database it returns 503 and \"status\":\"error\", so Req 5's requirement - that the success path is reachable only after the query resolves, and that it never reports success when the query did not succeed - is now confirmed live, not only statically by QA1.\n\nPROVENANCE OF THE REQ 7 BUILD, checked rather than assumed. The preview was produced by a CLI upload (\"Retrieving list of deployment files...\"), not a git clone, so I verified the uploaded tree was the shipped code:\n  git diff --name-only 6d5a803 HEAD -- app lib package.json next.config.ts tsconfig.json  -> empty\n  git status --short on those same paths -> empty (no uncommitted application changes)\n  Preview build route table shows \"f /api/health\" (dynamic), same as production.\n  Preview root returns 200 at 10657 bytes - byte-identical in size to the production deployment's root.\n  So the only difference between the Req 7 environment and the shipped production one is the poisoned database variable, which is exactly the isolation the criterion calls for.\n\nROBUSTNESS / TRIED TO BREAK IT - no defects found:\n  POST / PUT / DELETE on /api/health -> 405; HEAD -> 200 healthy, 503 failing; trailing slash -> 308\n  /api/health?x=' OR 1=1--&y=<script> -> 200 clean JSON, nothing reflected\n  /api/nope -> 404\n  20 concurrent requests -> 0 malformed responses\n\nHOUSEKEEPING, not a defect and not blocking: preview deployment 292jy7q6n is still live and serving 503s by design. It is a preview target, carries x-robots-tag: noindex, and never touched the project's stored env vars or the production database. Worth deleting once nobody needs it for the record; not mine to remove.\n\nVERDICT PASS = THE CODE IS READY, NOT THAT ANYONE MAY CLOSE THIS. Per CLAUDE.md, /sprint-complete requires the user's explicit real-time authorization via --user-said. Both gates being green is not authorization. Dev Team tells the user it is ready and waits."
+    },
+    {
+      "ts": "2026-09-19T20:51:23+00:00",
+      "actor": "dev-team",
+      "event": "sprint_closed",
+      "detail": "user_said=User invoked /sprint-complete for sprint 1 in this Dev Team 1 session."
     }
   ],
   "last_claim": {
-    "claude_session_id": "e9b568aa-c3bb-5cb0-a79c-ef7746762b28",
-    "claude_agent": "liveqa",
-    "ts": "2026-09-19T20:44:20+00:00"
+    "claude_session_id": "ff4e5e68-1289-506d-a7d9-0727932a2b93",
+    "claude_agent": "dev-team-1",
+    "ts": "2026-09-19T20:51:23+00:00"
   }
 }
