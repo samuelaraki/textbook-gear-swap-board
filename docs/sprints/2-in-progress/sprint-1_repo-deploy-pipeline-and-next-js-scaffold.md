@@ -2,7 +2,7 @@
 id: 1
 title: "Repo, deploy pipeline, and Next.js scaffold"
 epic: "Swap Board v1"
-status: todo
+status: in_progress
 created: 2026-09-19T18:55:36+00:00
 ---
 

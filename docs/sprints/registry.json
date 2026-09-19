@@ -4,8 +4,8 @@
     "1": {
       "title": "Repo, deploy pipeline, and Next.js scaffold",
       "epic": "Swap Board v1",
-      "status": "todo",
-      "file": "docs/sprints/1-todo/sprint-1_repo-deploy-pipeline-and-next-js-scaffold.md"
+      "status": "in_progress",
+      "file": "docs/sprints/2-in-progress/sprint-1_repo-deploy-pipeline-and-next-js-scaffold.md"
     }
   }
 }

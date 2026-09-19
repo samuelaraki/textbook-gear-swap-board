@@ -1,0 +1,28 @@
+{
+  "id": 1,
+  "title": "Repo, deploy pipeline, and Next.js scaffold",
+  "phase": "dev_build",
+  "qa1_audit_result": null,
+  "qa1_audit_file_hash": null,
+  "qa1_audited_tree_hash": null,
+  "last_shipped_commit": null,
+  "groundtruth_result": null,
+  "live_loop_audit_trees": [],
+  "audit_rounds": 0,
+  "live_test_rounds": 0,
+  "started": "2026-09-19T18:59:09+00:00",
+  "completed": null,
+  "history": [
+    {
+      "ts": "2026-09-19T18:59:09+00:00",
+      "actor": "system",
+      "event": "sprint_started",
+      "detail": ""
+    }
+  ],
+  "last_claim": {
+    "claude_session_id": "ff4e5e68-1289-506d-a7d9-0727932a2b93",
+    "claude_agent": "dev-team-1",
+    "ts": "2026-09-19T18:59:09+00:00"
+  }
+}
