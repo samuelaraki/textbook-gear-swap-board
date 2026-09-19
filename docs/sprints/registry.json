@@ -1,11 +1,17 @@
 {
-  "next_id": 2,
+  "next_id": 3,
   "sprints": {
     "1": {
       "title": "Repo, deploy pipeline, and Next.js scaffold",
       "epic": "Swap Board v1",
       "status": "in_progress",
       "file": "docs/sprints/2-in-progress/sprint-1_repo-deploy-pipeline-and-next-js-scaffold.md"
+    },
+    "2": {
+      "title": "Post an item and see the board",
+      "epic": "Swap Board v1",
+      "status": "todo",
+      "file": "docs/sprints/1-todo/sprint-2_post-an-item-and-see-the-board.md"
     }
   }
 }
