@@ -43,8 +43,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // createItem's return type has no claim_token field (Req 4) — nothing
-    // needs to be stripped here, because there is nothing to strip.
+    // Sprint 3, Req 1: this is now the one deliberate exception to sprint
+    // 2's absolute claim_token invariant — createItem returns CreatedItem
+    // (Item + claimToken), and this response is the only place in the
+    // system that type is ever read. Every other function in lib/items.ts
+    // still returns plain Item, which has no claim_token field to leak.
     const item = await createItem(result.data);
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {

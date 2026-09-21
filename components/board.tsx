@@ -1,20 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { Item } from "@/lib/items";
+import type { CreatedItem, Item } from "@/lib/items";
+import { formatPriceCents } from "@/lib/format";
 
 interface BoardProps {
   initialItems: Item[];
   initialLoadError: boolean;
-}
-
-// Req 10: price_cents of 0 renders as "Free"; anything else renders as a
-// currency amount with two decimal places.
-function formatPrice(cents: number): string {
-  if (cents === 0) {
-    return "Free";
-  }
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export function Board({ initialItems, initialLoadError }: BoardProps) {
@@ -31,9 +23,23 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Sprint 3, Req 2: the claim link is shown exactly once, right after a
+  // successful post, and lives only in this component's own in-memory
+  // state — never persisted, never refetched, never part of `items`. It
+  // disappears on refresh because the server has nothing left to re-emit
+  // it from (sprint 2's invariant, minus this one response).
+  const [justPostedClaimUrl, setJustPostedClaimUrl] = useState<string | null>(
+    null
+  );
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
+    "idle"
+  );
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setJustPostedClaimUrl(null);
+    setCopyStatus("idle");
     setSubmitting(true);
 
     try {
@@ -45,7 +51,7 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
           // Sent as-typed (a string) when non-empty, so the server's own
           // parsing/validation is the single source of truth on what
           // counts as a valid price — this client never decides that on
-          // its own, per Req 6.
+          // its own, per sprint 2 Req 6.
           price: price.trim() === "" ? null : price,
           email,
         }),
@@ -54,17 +60,24 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        // Req 9: on validation failure, the user's typed input is left
-        // exactly as it is — nothing here clears title/price/email.
+        // Sprint 2, Req 9: on validation failure, the user's typed input
+        // is left exactly as it is — nothing here clears title/price/email.
         setFormError(
           typeof data?.error === "string" ? data.error : "Something went wrong."
         );
         return;
       }
 
-      // Req 9: the new item appears in the list without a manual page
-      // refresh — prepended locally rather than waiting on a refetch.
-      setItems((previous) => [data.item as Item, ...previous]);
+      // Sprint 3, Req 1: strip claimToken off before this item ever
+      // touches `items` — the list state (and everything rendered from
+      // it) must stay exactly as safe as an Item the board loaded from
+      // GET, never carrying the one field a CreatedItem has that Item
+      // doesn't.
+      const createdItem = data.item as CreatedItem;
+      const { claimToken, ...safeItem } = createdItem;
+      setItems((previous) => [safeItem as Item, ...previous]);
+      setJustPostedClaimUrl(`${window.location.origin}/claim/${claimToken}`);
+
       setTitle("");
       setPrice("");
       setEmail("");
@@ -72,6 +85,19 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
       setFormError("Could not reach the server. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleCopyClaimUrl() {
+    if (!justPostedClaimUrl) return;
+    try {
+      await navigator.clipboard.writeText(justPostedClaimUrl);
+      setCopyStatus("copied");
+    } catch {
+      // Clipboard access can be denied/unavailable — the text field below
+      // is still selectable and copyable by hand either way (Req 2), so
+      // this failing is a convenience loss, not a requirement failure.
+      setCopyStatus("failed");
     }
   }
 
@@ -123,12 +149,37 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
         </button>
       </form>
 
+      {justPostedClaimUrl && (
+        // Req 2: a secret shown once, with an explicit statement that it
+        // is shown once, and selectable/copyable as text — not only a
+        // clickable link, since the point is the poster keeps a copy.
+        <div role="status">
+          <p>
+            <strong>Save this link now — it will not be shown again.</strong>{" "}
+            Anyone who has it can mark this item claimed.
+          </p>
+          <input
+            type="text"
+            readOnly
+            value={justPostedClaimUrl}
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          <button type="button" onClick={handleCopyClaimUrl}>
+            Copy link
+          </button>
+          {copyStatus === "copied" && <span> Copied.</span>}
+          {copyStatus === "failed" && (
+            <span> Could not copy automatically — select the text above.</span>
+          )}
+        </div>
+      )}
+
       <hr />
 
       {loadError ? (
-        // Req 11: a database failure must surface as a visible error state,
-        // never as an empty list a visitor can't distinguish from "no items
-        // have been posted yet."
+        // Sprint 2, Req 11: a database failure must surface as a visible
+        // error state, never as an empty list a visitor can't distinguish
+        // from "no items have been posted yet."
         <p role="alert">
           Could not load the board right now. Please try again later.
         </p>
@@ -138,10 +189,21 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
         <ul>
           {items.map((item) => (
             <li key={item.id}>
-              {/* Req 10: title/email reach the DOM as plain text through
-                  JSX interpolation — never dangerouslySetInnerHTML — so a
-                  title containing markup displays as literal characters. */}
-              <strong>{item.title}</strong> — {formatPrice(item.priceCents)} —{" "}
+              {/* Sprint 2, Req 10: title/email reach the DOM as plain text
+                  through JSX interpolation — never dangerouslySetInnerHTML
+                  — so a title containing markup displays as literal
+                  characters. */}
+              <strong
+                style={item.claimed ? { textDecoration: "line-through" } : undefined}
+              >
+                {item.title}
+              </strong>{" "}
+              {/* Sprint 3, Req 8: claimed state is a text label, not a
+                  color — reads correctly for a colorblind viewer and in a
+                  black-and-white screenshot. The strikethrough above is a
+                  second, redundant cue, not the only one. */}
+              {item.claimed && <span>(Claimed)</span>} —{" "}
+              {formatPriceCents(item.priceCents)} —{" "}
               <a href={`mailto:${item.email}`}>{item.email}</a>
             </li>
           ))}
