@@ -22,6 +22,52 @@ interface RateLimitHitRow {
   window_start: Date;
 }
 
+// LiveQA round 1 (FAIL): migrations/0002 was committed but nothing on
+// this project's deploy path ever ran it, so rate_limit_hits never
+// existed in production. Req 6's own fail-open path swallowed the
+// resulting error on every single request — nine posts in a row
+// succeeded, silently, with no 429 and no visible sign anything was
+// wrong. The fix is not "remember to run the migration" (that's the
+// exact human step that was already missed once); it's making the
+// schema's own existence not depend on anyone remembering anything.
+//
+// This is deliberately NOT wired into the build (e.g. a "prebuild" npm
+// script) — this project's fail-open live tests (this sprint's Req 6,
+// sprint 4's Req 8) work by pointing DATABASE_URL/POSTGRES_URL at an
+// unreachable host on a preview deploy. A build-time migration step
+// would make that preview fail to build at all, taking away the exact
+// environment LiveQA needs to test the fail-open path against — trading
+// one real gap for a worse one. Ensuring the schema at runtime, lazily,
+// on first use, fixes the actual defect (a missing table silently
+// disabling the limiter forever) without disturbing that technique: a
+// poisoned DATABASE_URL just makes this throw like every other query
+// here, which is already exactly what Req 6's fail-open path is for.
+//
+// Memoized per warm instance so a steady-state instance pays for this
+// once, not on every request — but reset to null on failure, so a
+// transient outage doesn't wedge a warm instance into believing the
+// schema is ready when it never actually confirmed that.
+let schemaReadyPromise: Promise<void> | null = null;
+
+function ensureSchema(): Promise<void> {
+  if (!schemaReadyPromise) {
+    schemaReadyPromise = query(
+      `CREATE TABLE IF NOT EXISTS rate_limit_hits (
+         client_key TEXT NOT NULL,
+         window_start TIMESTAMPTZ NOT NULL,
+         count INTEGER NOT NULL DEFAULT 1,
+         PRIMARY KEY (client_key, window_start)
+       )`
+    )
+      .then(() => undefined)
+      .catch((error) => {
+        schemaReadyPromise = null;
+        throw error;
+      });
+  }
+  return schemaReadyPromise;
+}
+
 // Sprint 5, Req 2: **the central requirement of this sprint.** State
 // lives in Postgres — one row per (client, fixed window) — not in any
 // process-local variable. Every serverless instance reads and writes the
@@ -54,6 +100,14 @@ interface RateLimitHitRow {
 // recorded here rather than being an unstated gap.
 export async function checkRateLimit(clientKey: string): Promise<RateLimitResult> {
   const windowSeconds = RATE_LIMIT_WINDOW_SECONDS;
+
+  // Throws exactly like the query below on a genuinely unreachable store
+  // — same error shape, same caller-side fail-open handling in
+  // app/api/items/route.ts. On any database that already has the table
+  // (every case after the very first successful call on a given
+  // instance), this resolves an already-settled promise and costs
+  // nothing extra.
+  await ensureSchema();
 
   const result = await query<RateLimitHitRow>(
     `INSERT INTO rate_limit_hits (client_key, window_start, count)

@@ -3,7 +3,6 @@ import { createItem, listItems } from "@/lib/items";
 import { validateItemInput } from "@/lib/validation";
 import { checkRateLimit, RATE_LIMIT_WINDOW_SECONDS } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/client-ip";
-import { isHoneypotTriggered } from "@/lib/spam-guard";
 
 // Same reason as sprint 1's /api/health (Req 8): without this, Next.js can
 // evaluate/cache this route at build time, and a newly posted item would
@@ -37,29 +36,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Sprint 5, Req 5/8: the honeypot is checked before validation and
-  // before anything reaches the database. A submission with it filled is
-  // rejected with the exact same shape (400, { error: string }) as an
-  // ordinary validation failure below — there is no separate branch or
-  // marker that would let a client tell the two apart from the response
-  // alone. A body that isn't an object at all falls through to
-  // validateItemInput, which already rejects that shape on its own.
-  if (
-    typeof body === "object" &&
-    body !== null &&
-    isHoneypotTriggered(body as Record<string, unknown>)
-  ) {
-    return NextResponse.json(
-      { error: "Request could not be processed." },
-      { status: 400 }
-    );
-  }
-
-  // Req 6 (sprint 2): validation runs before anything reaches the
-  // database. A rejected request never gets as far as an insert attempt,
-  // so there is no row to have written and no cleanup path to get wrong.
+  // Sprint 5, Req 5/8 (fixed after LiveQA round 1): the honeypot check
+  // now lives inside validateItemInput itself (lib/validation.ts), not a
+  // standalone branch here — see that file's comment for why. Round 1's
+  // standalone version was the only 400 body, out of thirteen swept, that
+  // didn't match any other rejection path, which is exactly the
+  // fingerprint a bot needs to identify the trap. A rejected request —
+  // honeypot or ordinary validation — never gets as far as an insert
+  // attempt, so there is no row to have written and no cleanup path to
+  // get wrong (Req 6, sprint 2).
   const result = validateItemInput(body);
   if (!result.valid) {
+    // honeypotTriggered never reaches the client (result.message is the
+    // only field sent) — it exists purely so the operator isn't flying
+    // blind on how often the honeypot is actually catching something,
+    // now that its response is indistinguishable from any other 400.
+    if (result.honeypotTriggered) {
+      console.warn("[api/items] honeypot triggered, rejected");
+    }
     return NextResponse.json({ error: result.message }, { status: 400 });
   }
 
