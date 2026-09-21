@@ -125,3 +125,26 @@ export async function claimItemByToken(token: string): Promise<Item | null> {
   }
   return rowToItem(result.rows[0]);
 }
+
+// Sprint 4, Req 1: a real DELETE against the row, never a soft-delete flag
+// — the entire point is getting the email address off the database, and a
+// hidden row still holding it would not do that. No RETURNING clause: this
+// function never has the deleted row's data in scope at all after the
+// query runs, so there is nothing here that could end up in a log line
+// even by accident.
+//
+// Req 8: the return value is `result.rowCount > 0`, the driver's own
+// reported count of rows actually affected — not "no exception was
+// thrown." A query that runs cleanly but matches zero rows (an unknown or
+// already-deleted token) must report false, the same as
+// findItemByClaimToken/claimItemByToken report null for the same reason:
+// the caller cannot tell "no such token" apart from any other reason this
+// could return nothing, and a thrown error (a real DB failure) is a third,
+// distinct outcome the caller must handle separately — see
+// app/claim/[token]/route.ts's removal handler.
+export async function deleteItemByToken(token: string): Promise<boolean> {
+  const result = await query(`DELETE FROM items WHERE claim_token = $1`, [
+    token,
+  ]);
+  return (result.rowCount ?? 0) > 0;
+}
