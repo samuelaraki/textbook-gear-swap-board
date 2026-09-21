@@ -2,7 +2,7 @@
 id: 3
 title: "Claim an item with a secret link"
 epic: "Swap Board v1"
-status: todo
+status: in_progress
 created: 2026-09-21T20:45:38+00:00
 ---
 

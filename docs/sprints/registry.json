@@ -16,8 +16,8 @@
     "3": {
       "title": "Claim an item with a secret link",
       "epic": "Swap Board v1",
-      "status": "todo",
-      "file": "docs/sprints/1-todo/sprint-3_claim-an-item-with-a-secret-link.md"
+      "status": "in_progress",
+      "file": "docs/sprints/2-in-progress/sprint-3_claim-an-item-with-a-secret-link.md"
     }
   }
 }
