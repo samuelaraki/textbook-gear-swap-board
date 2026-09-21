@@ -1,5 +1,5 @@
 {
-  "next_id": 4,
+  "next_id": 6,
   "sprints": {
     "1": {
       "title": "Repo, deploy pipeline, and Next.js scaffold",
@@ -18,6 +18,18 @@
       "epic": "Swap Board v1",
       "status": "done",
       "file": "docs/sprints/3-done/sprint-3_claim-an-item-with-a-secret-link--done.md"
+    },
+    "4": {
+      "title": "Poster-initiated post removal",
+      "epic": "Swap Board v1.1 \u2014 launch readiness",
+      "status": "todo",
+      "file": "docs/sprints/1-todo/sprint-4_poster-initiated-post-removal.md"
+    },
+    "5": {
+      "title": "Rate limiting and spam controls",
+      "epic": "Swap Board v1.1 \u2014 launch readiness",
+      "status": "todo",
+      "file": "docs/sprints/1-todo/sprint-5_rate-limiting-and-spam-controls.md"
     }
   }
 }
