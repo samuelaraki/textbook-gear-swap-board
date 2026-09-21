@@ -1,8 +1,25 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type CSSProperties, type FormEvent } from "react";
 import type { CreatedItem, Item } from "@/lib/items";
 import { formatPriceCents } from "@/lib/format";
+import { HONEYPOT_FIELD_NAME } from "@/lib/spam-guard";
+
+// Sprint 5, Req 5: off-screen positioning, not display:none/visibility:hidden
+// and not a bare type="hidden". A naive bot's generic form-filler targets
+// any present, normally-typed input regardless of computed style — the
+// point is that the field still looks fillable to that kind of scraper.
+// Combined with aria-hidden and tabIndex={-1} below, it is simultaneously
+// invisible, untabbable, and unannounced for every real (human, keyboard,
+// or screen-reader) user.
+const honeypotStyle: CSSProperties = {
+  position: "absolute",
+  left: "-9999px",
+  top: "auto",
+  width: "1px",
+  height: "1px",
+  overflow: "hidden",
+};
 
 interface BoardProps {
   initialItems: Item[];
@@ -20,6 +37,11 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [email, setEmail] = useState("");
+  // Sprint 5, Req 5: never rendered visibly, never focusable, never
+  // announced — see honeypotStyle above. A real browser submits this
+  // empty because a real user never sees or reaches it; only something
+  // filling in every input it finds in the DOM will populate it.
+  const [honeypot, setHoneypot] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,6 +76,7 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
           // its own, per sprint 2 Req 6.
           price: price.trim() === "" ? null : price,
           email,
+          [HONEYPOT_FIELD_NAME]: honeypot,
         }),
       });
 
@@ -81,6 +104,7 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
       setTitle("");
       setPrice("");
       setEmail("");
+      setHoneypot("");
     } catch {
       setFormError("Could not reach the server. Please try again.");
     } finally {
@@ -143,6 +167,20 @@ export function Board({ initialItems, initialLoadError }: BoardProps) {
             required
           />
         </div>
+        {/* Sprint 5, Req 5: the honeypot field. No <label>, aria-hidden so
+            assistive tech skips it entirely, tabIndex={-1} so keyboard
+            users can never tab into it, and off-screen styling (above) so
+            it is never visible — a real user cannot fill this in. */}
+        <input
+          type="text"
+          name={HONEYPOT_FIELD_NAME}
+          value={honeypot}
+          onChange={(event) => setHoneypot(event.target.value)}
+          style={honeypotStyle}
+          aria-hidden="true"
+          tabIndex={-1}
+          autoComplete="off"
+        />
         {formError && <p role="alert">{formError}</p>}
         <button type="submit" disabled={submitting}>
           {submitting ? "Posting..." : "Post item"}
