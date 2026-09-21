@@ -28,8 +28,8 @@
     "5": {
       "title": "Rate limiting and spam controls",
       "epic": "Swap Board v1.1 \u2014 launch readiness",
-      "status": "todo",
-      "file": "docs/sprints/1-todo/sprint-5_rate-limiting-and-spam-controls.md"
+      "status": "in_progress",
+      "file": "docs/sprints/2-in-progress/sprint-5_rate-limiting-and-spam-controls.md"
     }
   }
 }
