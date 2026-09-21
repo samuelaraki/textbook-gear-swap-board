@@ -1,7 +1,7 @@
 {
   "id": 3,
   "title": "Claim an item with a secret link",
-  "phase": "qa1_audit",
+  "phase": "dev_agreed_done",
   "qa1_audit_result": "PASS",
   "qa1_audit_file_hash": "3fc295c82805132241fd8678540c647da2d3e3328ec052dea49e63208d13da37",
   "qa1_audited_tree_hash": "0c04a7d9cc1afae729d6bf2f26d6b0e9401cd105ce79d5b1b1d401d20728487b",
@@ -30,11 +30,17 @@
       "actor": "qa1",
       "event": "audit",
       "detail": "PASS: PASS (round 2). Audited commit 4fc6843, working tree clean. Sprint file re-read and confirmed unchanged since round 1 (zero diff across db295c1..HEAD), so round 1 coverage of Reqs 2-11 stands and this re-audit focused on the fix.\n\nSCOPE: exactly two files changed since round 1 - app/claim/[token]/route.ts and docs/sprints/state/sprint-3.json (my own bookkeeping). No scope creep. The Req 5 not-found literal, both response builders, the lookup sentinel and the GET/POST branch ordering are all untouched by this diff, so nothing round 1 cleared needed re-deriving.\n\nROUND 1 BLOCKER RESOLVED, and resolved better than asked. I required dropping the action attribute. They also removed token from renderItemHtml entirely, so the function no longer has access to the value it must not emit. That converts the fix from a line someone must not re-add into a parameter that is not there to be used - the same structural instinct as CreatedItem and the frozen not-found literal, applied to the defect itself. That is the right way to close a finding.\n\nVERIFIED BY RE-RUNNING THE ROUND 1 DEMONSTRATION, not by reading the diff. Same harness, same known token, recompiled from the current file and running its own emitted renderItemHtml: unclaimed page now yields 0 occurrences of the token where round 1 yielded exactly 1 in the action attribute; claimed page 0, as before. The harness is the one that caught the defect, so a zero here is evidence the defect is gone rather than evidence the check stopped looking.\n\nNO REGRESSION: npm run lint exit 0, npm run build exit 0, both re-run by me. /claim/[token] still builds dynamic, not static. Re-ran the XSS probe through the hand-built HTML after the edit - a script title and an email crafted to break out of the href attribute both still come back entity-escaped, no execution, no attribute break-out.\n\nRE-ENUMERATED EVERY TOKEN SITE IN THE CODEBASE after the fix. What remains: three DB lookups that pass the token as a bound parameter (not emission), the generation and INSERT in lib/items.ts, two WHERE clauses, the board destructuring claimToken off before the item reaches list state, and the one allowed Req 2 display of the link to the poster who just posted. No SELECT or RETURNING list contains claim_token. No log statement takes an item object.\n\nONE THING I CONSIDERED AND AM DELIBERATELY NOT CALLING A FINDING, recorded so it does not look overlooked: the claim POST returns a 303 whose Location names /claim/<token>. That is a POST response header, not a GET response, not a rendering, and not a payload for a visitor who did not just post - and it is unavoidable under Post/Redirect/Get, since any redirect back to the claim page must name the claim URL. The requester just submitted to that exact URL, so nothing is disclosed that the recipient did not already hold. This sprint design already accepts a token in the URL path as its central trade-off, with Req 9 headers as the stated mitigation. Distinct from round 1 finding, which was the token appearing in a rendered GET body where the criterion said the claim page rendering must exclude it.\n\nPROCESS NOTE, not a defect and not holding anything up: Dev Team handoff recap says the fix was pushed. It was not, and that is correct - git log origin/main..HEAD shows 8 local commits not on the remote, including this fix, both sprint 3 commits, sprint 2 LiveQA records and sprint 2 close. Only Pipeman pushes, and nothing here broke that. Flagging only so nobody downstream reads pushed and assumes the remote is current: Pipeman is carrying all 8, not 1.\n\nNON-BLOCKING, carried from round 1, none holding this gate: the stale lib/format.ts comment referencing components/claim-form.tsx which does not exist; the absolute Location built from request.url where a relative one would be proxy-immune; and app/layout.tsx still carrying the default Create Next App metadata title since sprint 1.\n\nCLEARED for /sprint-dev-done then Pipeman. LiveQA owns what a static read cannot settle: the cold-client hunt for a known token in the board API and HTML, the byte-identical comparison across three bad tokens, confirming a GET does not claim, both Req 9 headers observed on the wire, the cold-client claimed-state check, and forcing a real database failure against the claim page. Note for LiveQA: the standing poisoned preview was built from the pre-fix commit. Dev Team flagged that themselves rather than letting it pass unstated, which was the right call. It remains valid for Req 10, whose behaviour this fix does not touch, but it is not valid for any criterion about the claim page rendered body - the token-hunt checks need a deployment of this commit."
+    },
+    {
+      "ts": "2026-09-21T21:28:38+00:00",
+      "actor": "dev-team",
+      "event": "dev_agreed_done",
+      "detail": ""
     }
   ],
   "last_claim": {
-    "claude_session_id": "f56fc72f-1e6d-599d-b32f-6f9c31931588",
-    "claude_agent": "qa1",
-    "ts": "2026-09-21T21:25:44+00:00"
+    "claude_session_id": "ff4e5e68-1289-506d-a7d9-0727932a2b93",
+    "claude_agent": "dev-team-1",
+    "ts": "2026-09-21T21:28:38+00:00"
   }
 }
