@@ -1,5 +1,5 @@
 {
-  "next_id": 3,
+  "next_id": 4,
   "sprints": {
     "1": {
       "title": "Repo, deploy pipeline, and Next.js scaffold",
@@ -12,6 +12,12 @@
       "epic": "Swap Board v1",
       "status": "done",
       "file": "docs/sprints/3-done/sprint-2_post-an-item-and-see-the-board--done.md"
+    },
+    "3": {
+      "title": "Claim an item with a secret link",
+      "epic": "Swap Board v1",
+      "status": "todo",
+      "file": "docs/sprints/1-todo/sprint-3_claim-an-item-with-a-secret-link.md"
     }
   }
 }
