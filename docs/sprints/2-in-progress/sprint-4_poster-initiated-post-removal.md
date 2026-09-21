@@ -2,7 +2,7 @@
 id: 4
 title: "Poster-initiated post removal"
 epic: "Swap Board v1.1 — launch readiness"
-status: todo
+status: in_progress
 created: 2026-09-21T21:43:39+00:00
 ---
 

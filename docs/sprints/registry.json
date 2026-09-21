@@ -22,8 +22,8 @@
     "4": {
       "title": "Poster-initiated post removal",
       "epic": "Swap Board v1.1 \u2014 launch readiness",
-      "status": "todo",
-      "file": "docs/sprints/1-todo/sprint-4_poster-initiated-post-removal.md"
+      "status": "in_progress",
+      "file": "docs/sprints/2-in-progress/sprint-4_poster-initiated-post-removal.md"
     },
     "5": {
       "title": "Rate limiting and spam controls",
