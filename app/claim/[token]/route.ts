@@ -69,17 +69,24 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderItemHtml(item: Item, token: string): string {
+function renderItemHtml(item: Item): string {
   const title = escapeHtml(item.title);
   const email = escapeHtml(item.email);
-  const claimAction = `/claim/${encodeURIComponent(token)}`;
 
   // Req 6: a real HTML <form method="POST">, not a link or a GET action —
   // loading this page can never claim the item, only submitting this form
   // can, and submitting it is a POST by construction.
+  //
+  // Req 1 (QA1 round 1): no `action` attribute, deliberately. A form with
+  // no action submits to the current document URL by definition, which
+  // is already /claim/<token> — no need to interpolate the token into
+  // this markup at all, and no way to accidentally introduce a second
+  // GET-reachable path that emits it. This function no longer even
+  // receives the token as a parameter, so there is nothing here that
+  // could reintroduce this defect by being called differently later.
   const actionMarkup = item.claimed
     ? `<p role="status">This item is marked as claimed.</p>`
-    : `<form method="POST" action="${claimAction}">
+    : `<form method="POST">
 <button type="submit">Mark as claimed</button>
 </form>`;
 
@@ -123,7 +130,7 @@ export async function GET(
     return notFoundResponse();
   }
 
-  return new Response(renderItemHtml(item, token), {
+  return new Response(renderItemHtml(item), {
     status: 200,
     headers: HTML_HEADERS,
   });
