@@ -6,6 +6,8 @@
 // integer price_cents, never a float, and never have to do the conversion
 // themselves elsewhere.
 
+import { isHoneypotTriggered } from "./spam-guard";
+
 export interface ValidatedItemInput {
   title: string;
   priceCents: number;
@@ -14,7 +16,13 @@ export interface ValidatedItemInput {
 
 export type ValidationResult =
   | { valid: true; data: ValidatedItemInput }
-  | { valid: false; message: string };
+  // Sprint 5, Req 5 (fixed after LiveQA round 1): honeypotTriggered is
+  // for server-side logging only (see app/api/items/route.ts) — it is
+  // never read into a response body. It exists so the operator doesn't
+  // lose all visibility into honeypot catches just because the client
+  // response for one is now indistinguishable from any other validation
+  // failure.
+  | { valid: false; message: string; honeypotTriggered?: boolean };
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_PRICE_DOLLARS = 100_000;
@@ -42,7 +50,29 @@ export function validateItemInput(input: unknown): ValidationResult {
   if (typeof input !== "object" || input === null) {
     return { valid: false, message: "Request body must be a JSON object." };
   }
-  const { title, price, email } = input as Record<string, unknown>;
+  const record = input as Record<string, unknown>;
+
+  // Sprint 5, Req 5 (fixed after LiveQA round 1): the honeypot check
+  // lives inside validation itself now, not a separate branch in the
+  // route handler, specifically so its rejection can never drift from
+  // an ordinary validation failure the way two independently-maintained
+  // branches eventually do — the same lesson sprint 4's Req 5 states for
+  // its own byte-identical response ("two branches that must stay
+  // byte-identical will drift"). LiveQA's round-1 test proved the drift
+  // risk was real, not theoretical: the original standalone honeypot
+  // response was the only 400 body, out of thirteen swept, that didn't
+  // match anything else — a bot could fingerprint the trap by submitting
+  // twice and diffing the two error messages. This return deliberately
+  // reuses the exact message text "Title is required." produces below —
+  // not merely a similar-looking string maintained separately, but a
+  // guarantee to keep in sync by inspection: if that message ever
+  // changes, this one is four lines away, in the same function, not in
+  // a different file's route handler where it could silently drift.
+  if (isHoneypotTriggered(record)) {
+    return { valid: false, message: "Title is required.", honeypotTriggered: true };
+  }
+
+  const { title, price, email } = record;
 
   if (typeof title !== "string" || title.trim().length === 0) {
     return { valid: false, message: "Title is required." };
