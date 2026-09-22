@@ -2,7 +2,7 @@
 id: 5
 title: "Rate limiting and spam controls"
 epic: "Swap Board v1.1 — launch readiness"
-status: in_progress
+status: done
 created: 2026-09-21T21:43:40+00:00
 ---
 
